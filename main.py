@@ -39,7 +39,8 @@ class Problem():
         self.eps = eps
         self.subsampling = subsampling
         self.make_test_kernels = kernel.make_test_kernels
-        self.cv_error = {}
+        self.cv_error = np.empty((len(L_range), len(lam_range), len(c_range)))
+        self.cv_error_array = np.empty((len(L_range), len(lam_range), len(c_range), 10))
         self.method = method
         self.gTrain_arr = []
         self.mu_arr = []
@@ -67,14 +68,13 @@ class Problem():
                         score_arr = - cross_val_score(
                             classifier, gTrain, self.yTrain, cv=10, scoring='neg_mean_squared_error')
                         score = score_arr.mean()
-                        error_arr = 1. - score_arr
-                        self.cv_error_array[L, lam, c] = error_arr
-                        self.cv_error[L, lam, c] = 1. - score
+                        self.cv_error_array[L, lam, c] = score_arr
+                        self.cv_error[L, lam, c] = score
                         print('c = ', self.c_range[c], ' -> ', self.cv_error[L, lam, c])
                     else:
                         classifier = self.get_classifier(c=self.c_range[c])
-                        score_arr = - cross_val_score(
-                            classifier, gTrain, self.yTrain, cv=10, scoring='neg_mean_squared_error')
+                        score_arr = cross_val_score(
+                            classifier, gTrain, self.yTrain, cv=10)
                         score = score_arr.mean()
                         error_arr = 1. - score_arr
                         self.cv_error_array[L, lam, c] = error_arr
@@ -84,11 +84,11 @@ class Problem():
         self.cv_error_best = self.cv_error[
             self.best_L, self.best_lam, self.best_c]
         classifier = self.get_classifier(c=self.c_range[self.best_c])
-        self.mu, self.gTrain = self.get_kernel(
+        self.mu, self.gTrain = self.get_kernel(self.xTrain, self.yTrain,
             lam=self.lam_range[self.best_lam], L=self.L_range[self.best_L])
         self.model = classifier.fit(self.gTrain, self.yTrain)
         for l in lam_range:
-            mu, gTrain = self.get_kernel(
+            mu, gTrain = self.get_kernel(self.xTrain, self.yTrain,
                 lam=l, L=self.L_range[self.best_L])
             model = classifier.fit(gTrain, self.yTrain)
             self.mu_arr.append(mu)
@@ -156,7 +156,11 @@ class Problem():
             self.xTrain, self.xTest, subsampling=self.subsampling)
         for i in range(len(self.mu_arr)):
             gTest = self.sum_weight_kernels(tmp, self.mu_arr[i]) ** self.degree
-            test_error = 1. - self.models[i].score(gTest, self.yTest)
+            if self.method == 'KRR':
+                predR = self.models[i].predict(self.gTest)
+                test_error = np.sqrt(mean_squared_error(self.yTest, predR))
+            else:
+                test_error = 1. - self.models[i].score(gTest, self.yTest)
             arr.append(test_error)
         return np.array(arr)
 
@@ -200,7 +204,7 @@ if __name__ == '__main__':
     eta = 0.6
     L_range = [1., 10., 50., 100.]
     eps = 1e-3
-    subsampling = 100
+    subsampling = 1
     mu0 = 1.
     mu_init = 1.
 
@@ -222,12 +226,13 @@ if __name__ == '__main__':
     msf = []
     mse_bm = []
     msf_bm = []
-    for i in range(30):
+    for i in range(1):
         preprocess._preprocess(dataset, 10000 * i)
         problem = Problem(dataset=dataset, alg=alg, method=method, degree=degree, c_range=c_range,
                           lam_range=lam_range, eta=eta, L_range=L_range, mu0=mu0, mu_init=mu_init, eps=eps, subsampling=subsampling)
         problem.cv()
         problem.score()
+        problem.plotting_error()
         mse.append(problem.mse)
         msf.append(problem.msf)
         problem.benchmark(method='KernelRidge()')
