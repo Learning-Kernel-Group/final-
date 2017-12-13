@@ -5,7 +5,7 @@ from sklearn.utils import shuffle
 import re
 
 # ok
-def _preprocess(data_set, random_state=random_state, frac=0.5):
+def _preprocess(data_set, random_state=None, frac=0.5):
     with open('data/uci/' + data_set + '.data', 'r') as _file:
         data_array = []
         for line in _file:
@@ -37,7 +37,7 @@ def _preprocess(data_set, random_state=random_state, frac=0.5):
         _list = [xTrain, yTrain, xTest, yTest]
         with open('data_python/' + data_set, 'wb') as _file:
             pickle.dump(_list, _file)
-            
+
 def preprocessor_libsvm_data(filename, format_label_func=lambda _: _):
     with open('data/uci/' + filename + '.data', 'r') as inputfile:
         features = []
@@ -93,11 +93,11 @@ def _load_and_save(dataset):
     y = np.concatenate((yTrain,yTest),axis=0).reshape((-1,1))
     data = np.concatenate((x,y),axis=1)
     _preprocess()
-            
+
 if __name__ == '__main__':
-    data_sets = ['kin8nm', 'ionosphere'] # 'sonar', 'ionosphere', 
+    data_sets = ['kin8nm', 'ionosphere'] # 'sonar', 'ionosphere',
     for dataset in data_sets:
-        _preprocess(dataset) 
+        _preprocess(dataset)
     data_sets_chris = ['breast-cancer']#, 'diabetes', 'fourclass', 'german',
         #'heart', 'kin8nm', 'madelon', 'supernova']
     for dataset in data_sets_chris:
