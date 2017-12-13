@@ -215,6 +215,28 @@ class Problem():
                 'figure-svc-error-{}-degree{}.png'.format(self.dataset, self.degree), dpi=250)
             plt.close('all')
 
+    def plotting_error_for_all(self, ax):
+        self.error_array = self.err_arr()
+        self.error_arr_array = self.err_arr_arr()
+        if self.method == 'KRR':
+            plot.plot_as_seq(self.error_array, self.lam_range, 'Test Error', ax)
+            plot.plot_as_errorbar(self.error_arr_array,
+                                  self.lam_range, 'Cross Validation Error', ax)
+            ax.set_title(r"Data Set {} (KRR) with degree $d = {{{}}}$".format(
+                self.dataset, self.degree))
+            ax.set_xlabel(r"$\lambda$")
+            ax.set_xscale("log")
+            ax.set_ylabel(r"Mean Squared Error")
+        else:
+            plot.plot_as_seq(self.error_array, self.lam_range, 'Test Error', ax)
+            plot.plot_as_errorbar(self.error_arr_array,
+                                  self.lam_range, 'Cross Validation Error', ax)
+            ax.set_title(r"Data Set {} (SVC) with degree $d = {{{}}}$".format(
+                self.dataset, self.degree))
+            ax.set_xlabel(r"$\lambda$")
+            ax.set_xscale("log")
+            ax.set_ylabel(r"Error rate")
+
 if __name__ == '__main__':
 
     data_sets = {1: 'ionosphere', 2: 'sonar', 3: 'breast-cancer', 4: 'diabetes', 5: 'fourclass', 6: 'german',
@@ -222,12 +244,12 @@ if __name__ == '__main__':
 
     data = 1
     alg = 'pgd'
-    method = 'KRR'
+    method = 'SVC'
     degree = 2
     k = 3
     # [2**(i-k) for i in range(2*k+1)]#[0.1,0.2,0.5,1.,2.]#[0.01,0.1,1.,10.,50.,80.,100.]
     c_range = [2 ** i for i in [-8, -4, -2, 0, 2, 4, 8]]
-    lam_range = [1., 10., 50., 100.]
+    lam_range = [.0001, .001, .01, .1, 1., 5.]
     eta = 0.6
     L_range = [1., 10., 50., 100.]
     eps = 1e-3
@@ -238,39 +260,45 @@ if __name__ == '__main__':
     dataset = data_sets[data]
     problem = Problem(dataset=dataset, alg=alg, degree=degree, c_range=c_range,
                       lam_range=lam_range, eta=eta, L_range=L_range, mu0=mu0, mu_init=mu_init, eps=eps, subsampling=subsampling)
-    '''
-    problem.statistical_cv()
-    problem.statistical_score()
 
-    problem.statistical_benchmark(method='KernelRidge()')
-
-    problem.cv()
-    problem.score()
-
-    problem.benchmark(method='KernelRidge()')
-    '''
-    mse = []
-    msf = []
-    mse_bm = []
-    msf_bm = []
-    for i in range(1):
-        preprocess._preprocess(dataset)
+    plt.style.use('ggplot')
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    fig = plt.figure(figsize=(10, 10))
+    for degree in range(1, 5):
         problem = Problem(dataset=dataset, alg=alg, method=method, degree=degree, c_range=c_range,
                           lam_range=lam_range, eta=eta, L_range=L_range, mu0=mu0, mu_init=mu_init, eps=eps, subsampling=subsampling)
         problem.cv()
         problem.score()
-        problem.plotting_error()
-        mse.append(problem.mse)
-        msf.append(problem.msf)
-        problem.benchmark(method='KernelRidge()')
-        mse_bm.append(problem.mse_bm)
-        msf_bm.append(problem.msf_bm)
-    mse = np.array(mse)
-    msf = np.array(msf)
-    mse_bm = np.array(mse_bm)
-    msf_bm = np.array(msf_bm)
+        ax = fig.add_subplot(220+int(degree))
+        problem.plotting_error_for_all(ax)
+    plt.legend()
+    plt.savefig(
+        'figure-svc-error-{}.png'.format(dataset), dpi=250)
+    plt.close('all')
 
-    print(mse.mean(), '+', mse.std())
-    print(mse_bm.mean(), '+', mse_bm.std())
-    print(msf.mean(), '+', msf.std())
-    print(msf_bm.mean(), '+', msf_bm.std())
+    # mse = []
+    # msf = []
+    # mse_bm = []
+    # msf_bm = []
+    # for i in range(1):
+    #     preprocess._preprocess(dataset)
+    #     problem = Problem(dataset=dataset, alg=alg, method=method, degree=degree, c_range=c_range,
+    #                       lam_range=lam_range, eta=eta, L_range=L_range, mu0=mu0, mu_init=mu_init, eps=eps, subsampling=subsampling)
+    #     problem.cv()
+    #     problem.score()
+    #     problem.plotting_error()
+    #     mse.append(problem.mse)
+    #     msf.append(problem.msf)
+    #     problem.benchmark(method='KernelRidge()')
+    #     mse_bm.append(problem.mse_bm)
+    #     msf_bm.append(problem.msf_bm)
+    # mse = np.array(mse)
+    # msf = np.array(msf)
+    # mse_bm = np.array(mse_bm)
+    # msf_bm = np.array(msf_bm)
+    #
+    # print(mse.mean(), '+', mse.std())
+    # print(mse_bm.mean(), '+', mse_bm.std())
+    # print(msf.mean(), '+', msf.std())
+    # print(msf_bm.mean(), '+', msf_bm.std())
