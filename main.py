@@ -227,7 +227,7 @@ if __name__ == '__main__':
     k = 3
     # [2**(i-k) for i in range(2*k+1)]#[0.1,0.2,0.5,1.,2.]#[0.01,0.1,1.,10.,50.,80.,100.]
     c_range = [2 ** i for i in [-8, -4, -2, 0, 2, 4, 8]]
-    lam_range = [0.01, 0.1, 1., 10., 50., 100.]
+    lam_range = [1., 10., 50., 100.]
     eta = 0.6
     L_range = [1., 10., 50., 100.]
     eps = 1e-3
@@ -254,7 +254,7 @@ if __name__ == '__main__':
     mse_bm = []
     msf_bm = []
     for i in range(1):
-        preprocess._preprocess(dataset, 10000 * i)
+        preprocess._preprocess(dataset)
         problem = Problem(dataset=dataset, alg=alg, method=method, degree=degree, c_range=c_range,
                           lam_range=lam_range, eta=eta, L_range=L_range, mu0=mu0, mu_init=mu_init, eps=eps, subsampling=subsampling)
         problem.cv()
