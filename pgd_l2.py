@@ -33,13 +33,13 @@ def find_kernel(x, y, degree=1, lam=10., eta=0.2, L=1., mu0=None, mu_init=None, 
     while np.linalg.norm(al - al_prime) / np.linalg.norm(al_prime) > eps and it < it_max:
         al = al_prime.copy()
         v = derivatives(base_kernels, p, al)
-        v /= np.linalg.norm(v)		
-        mu = mu0 + L * v 
+        v /= np.linalg.norm(v)
+        mu = mu0 + L * v
         gram = sum_weight_kernels(base_kernels, mu) + lam * np.eye(m)
         al_prime = eta * al + (1. - eta) * np.linalg.solve(gram, y)
         it += 1
-    print 'L = ', L, 'lam = ', lam 
-    print 'iter = ', it
+    print('L = ', L, 'lam = ', lam)
+    print('iter = ', it)
     base_kernels = get_base_kernels(x, subsampling=1)
     return mu, sum_weight_kernels(base_kernels, mu)
 
