@@ -40,7 +40,8 @@ class Problem():
         self.subsampling = subsampling
         self.make_test_kernels = kernel.make_test_kernels
         self.cv_error = np.empty((len(L_range), len(lam_range), len(c_range)))
-        self.cv_error_array = np.empty((len(L_range), len(lam_range), len(c_range), 10))
+        self.cv_error_array = np.empty(
+            (len(L_range), len(lam_range), len(c_range), 10))
         self.method = method
         self.gTrain_arr = []
         self.mu_arr = []
@@ -61,35 +62,45 @@ class Problem():
     def cv(self):
         for L in range(len(self.L_range)):
             for lam in range(len(self.lam_range)):
-                _, gTrain = self.get_kernel(self.xTrain, self.yTrain, lam=lam_range[lam], L=L_range[L])
+                _, gTrain = self.get_kernel(
+                    self.xTrain, self.yTrain, lam=lam_range[lam], L=L_range[L])
                 for c in range(len(self.c_range)):
                     if self.method == 'KRR':
                         classifier = self.get_classifier(c=lam)
-                        score_arr = - cross_val_score(
+                        error_arr = - cross_val_score(
                             classifier, gTrain, self.yTrain, cv=10, scoring='neg_mean_squared_error')
-                        score = score_arr.mean()
-                        self.cv_error_array[L, lam, c] = score_arr
-                        self.cv_error[L, lam, c] = score
-                        print('c = ', self.c_range[c], ' -> ', self.cv_error[L, lam, c])
+                        error = error_arr.mean()
+                        self.cv_error_array[L, lam, c] = error_arr
+                        self.cv_error[L, lam, c] = error
+                        print('c = ', self.c_range[
+                              c], ' -> ', self.cv_error[L, lam, c])
                     else:
                         classifier = self.get_classifier(c=self.c_range[c])
                         score_arr = cross_val_score(
                             classifier, gTrain, self.yTrain, cv=10)
                         score = score_arr.mean()
-                        error_arr = 1. - score_arr
-                        self.cv_error_array[L, lam, c] = error_arr
+                        self.cv_error_array[L, lam, c] = 1. - score_arr
                         self.cv_error[L, lam, c] = 1. - score
-                        print('c = ', self.c_range[c], ' -> ', self.cv_error[L, lam, c])
-        self.best_L, self.best_lam, self.best_c = np.unravel_index(self.cv_error.argmin(), self.cv_error.shape)
+                        print('c = ', self.c_range[
+                              c], ' -> ', self.cv_error[L, lam, c])
+        self.best_L, self.best_lam, self.best_c = np.unravel_index(
+            self.cv_error.argmin(), self.cv_error.shape)
         self.cv_error_best = self.cv_error[
             self.best_L, self.best_lam, self.best_c]
-        classifier = self.get_classifier(c=self.c_range[self.best_c])
+        if self.method == 'KRR':
+            classifier = self.get_classifier(c=self.lam_range[self.best_lam])
+        else:
+            classifier = self.get_classifier(c=self.c_range[self.best_c])
         self.mu, self.gTrain = self.get_kernel(self.xTrain, self.yTrain,
-            lam=self.lam_range[self.best_lam], L=self.L_range[self.best_L])
+                                               lam=self.lam_range[self.best_lam], L=self.L_range[self.best_L])
         self.model = classifier.fit(self.gTrain, self.yTrain)
         for l in lam_range:
+            if self.method == 'KRR':
+                classifier = self.get_classifier(c=l)
+            else:
+                classifier = self.get_classifier(c=self.c_range[self.best_c])
             mu, gTrain = self.get_kernel(self.xTrain, self.yTrain,
-                lam=l, L=self.L_range[self.best_L])
+                                         lam=l, L=self.L_range[self.best_L])
             model = classifier.fit(gTrain, self.yTrain)
             self.mu_arr.append(mu)
             self.gTrain_arr.append(gTrain)
@@ -133,8 +144,12 @@ class Problem():
     def benchmark(self, method=None):
         print('benchmark model: ' + method)
         classifier = eval(method)
-        print('cv -> ', - cross_val_score(classifier, self.xTrain,
-                                          self.yTrain, cv=10, scoring='neg_mean_squared_error').mean())
+        if method == 'KernelRidge()':
+            print('cv -> ', - cross_val_score(classifier, self.xTrain,
+                                              self.yTrain, cv=10, scoring='neg_mean_squared_error').mean())
+        else:
+            print('cv -> ', cross_val_score(classifier, self.xTrain,
+                                            self.yTrain, cv=10).mean())
         classifier.fit(self.xTrain, self.yTrain)
         tmp = classifier.predict(self.xTest)
         self.mse_bm = np.sqrt(mean_squared_error(self.yTest, tmp))
@@ -167,7 +182,6 @@ class Problem():
     def err_arr_arr(self):
         return self.cv_error_array[self.best_L, :, self.best_c]
 
-
     def plotting_error(self):
         plt.style.use('ggplot')
         plt.rc('text', usetex=True)
@@ -176,17 +190,30 @@ class Problem():
         ax = fig.add_subplot(111)
         self.error_array = self.err_arr()
         self.error_arr_array = self.err_arr_arr()
-        plot.plot_as_seq(self.error_array, self.lam_range, 'Test Error', ax)
-        plot.plot_as_errorbar(self.error_arr_array,
-                              self.lam_range, 'Cross Validation Error', ax)
-        ax.set_title(r"Data Set {} with degree $d = {{{}}}$".format(
-            self.dataset, self.degree))
-        ax.set_xlabel(r"$\lambda$")
-        ax.set_ylabel(r"Error rate")
-        plt.legend()
-        plt.savefig(
-            'figure-error-{}-degree{}.png'.format(self.dataset, self.degree), dpi=250)
-        plt.close('all')
+        if self.method == 'KRR':
+            plot.plot_as_seq(self.error_array, self.lam_range, 'Test Error', ax)
+            plot.plot_as_errorbar(self.error_arr_array,
+                                  self.lam_range, 'Cross Validation Error', ax)
+            ax.set_title(r"Data Set {} (KRR) with degree $d = {{{}}}$".format(
+                self.dataset, self.degree))
+            ax.set_xlabel(r"$\lambda$")
+            ax.set_ylabel(r"Mean Squared Error")
+            plt.legend()
+            plt.savefig(
+                'figure-krr-error-{}-degree{}.png'.format(self.dataset, self.degree), dpi=250)
+            plt.close('all')
+        else:
+            plot.plot_as_seq(self.error_array, self.lam_range, 'Test Error', ax)
+            plot.plot_as_errorbar(self.error_arr_array,
+                                  self.lam_range, 'Cross Validation Error', ax)
+            ax.set_title(r"Data Set {} (SVC) with degree $d = {{{}}}$".format(
+                self.dataset, self.degree))
+            ax.set_xlabel(r"$\lambda$")
+            ax.set_ylabel(r"Error rate")
+            plt.legend()
+            plt.savefig(
+                'figure-svc-error-{}-degree{}.png'.format(self.dataset, self.degree), dpi=250)
+            plt.close('all')
 
 if __name__ == '__main__':
 
@@ -196,7 +223,7 @@ if __name__ == '__main__':
     data = 1
     alg = 'pgd'
     method = 'KRR'
-    degree = 1
+    degree = 2
     k = 3
     # [2**(i-k) for i in range(2*k+1)]#[0.1,0.2,0.5,1.,2.]#[0.01,0.1,1.,10.,50.,80.,100.]
     c_range = [2 ** i for i in [-8, -4, -2, 0, 2, 4, 8]]
