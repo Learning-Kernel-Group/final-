@@ -259,23 +259,24 @@ if __name__ == '__main__':
     mu0 = 1.
     mu_init = 1.
 
-    dataset = data_sets[data]
+    for data in range(1, 11):
+        dataset = data_sets[data]
 
-    plt.style.use('ggplot')
-    plt.rc('text', usetex=True)
-    plt.rc('font', family='serif')
-    fig = plt.figure(figsize=(10, 10))
-    for degree in range(1, 5):
-        problem = Problem(dataset=dataset, alg=alg, method=method, degree=degree, c_range=c_range,
-                          lam_range=lam_range, eta=eta, L_range=L_range, mu0=mu0, mu_init=mu_init, eps=eps, subsampling=subsampling)
-        problem.cv()
-        problem.score()
-        ax = fig.add_subplot(220+int(degree))
-        problem.plotting_error_for_all(ax)
-    plt.legend()
-    plt.savefig(
-        'figure-svc-error-{}.png'.format(dataset), dpi=250)
-    plt.close('all')
+        plt.style.use('ggplot')
+        plt.rc('text', usetex=True)
+        plt.rc('font', family='serif')
+        fig = plt.figure(figsize=(10, 10))
+        for degree in range(1, 5):
+            problem = Problem(dataset=dataset, alg=alg, method=method, degree=degree, c_range=c_range,
+                              lam_range=lam_range, eta=eta, L_range=L_range, mu0=mu0, mu_init=mu_init, eps=eps, subsampling=subsampling)
+            problem.cv()
+            problem.score()
+            ax = fig.add_subplot(220+int(degree))
+            problem.plotting_error_for_all(ax)
+        plt.legend()
+        plt.savefig(
+            'figure-svc-error-{}.png'.format(dataset), dpi=250)
+        plt.close('all')
 
     # mse = []
     # msf = []
