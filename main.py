@@ -63,10 +63,10 @@ class Problem():
         for L in range(len(self.L_range)):
             for lam in range(len(self.lam_range)):
                 _, gTrain = self.get_kernel(
-                    self.xTrain, self.yTrain, lam=self.lam_range[lam], L=self.L_range[L])
+                    self.xTrain, self.yTrain, lam=lam_range[lam], L=L_range[L])
                 for c in range(len(self.c_range)):
                     if self.method == 'KRR':
-                        classifier = self.get_classifier(c=self.lam_range[lam])
+                        classifier = self.get_classifier(c=lam)
                         error_arr = - cross_val_score(
                             classifier, gTrain, self.yTrain, cv=10, scoring='neg_mean_squared_error')
                         error = error_arr.mean()
@@ -244,7 +244,7 @@ if __name__ == '__main__':
 
     data = 1
     alg = 'pgd'
-    method = 'KRR'
+    method = 'SVC'
     degree = 2
     k = 3
     # [2**(i-k) for i in range(2*k+1)]#[0.1,0.2,0.5,1.,2.]#[0.01,0.1,1.,10.,50.,80.,100.]
@@ -258,6 +258,8 @@ if __name__ == '__main__':
     mu_init = 1.
 
     dataset = data_sets[data]
+    problem = Problem(dataset=dataset, alg=alg, degree=degree, c_range=c_range,
+                      lam_range=lam_range, eta=eta, L_range=L_range, mu0=mu0, mu_init=mu_init, eps=eps, subsampling=subsampling)
 
     plt.style.use('ggplot')
     plt.rc('text', usetex=True)
