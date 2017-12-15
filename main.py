@@ -274,8 +274,12 @@ if __name__ == '__main__':
             ax = fig.add_subplot(220+int(degree))
             problem.plotting_error_for_all(ax)
         plt.legend()
-        plt.savefig(
-            'figure-svc-error-{}.png'.format(dataset), dpi=250)
+        if method == 'KRR':
+            plt.savefig(
+                'figure-krr-error-{}.png'.format(dataset), dpi=250)
+        else:
+            plt.savefig(
+                'figure-svc-error-{}.png'.format(dataset), dpi=250)
         plt.close('all')
 
     # mse = []
