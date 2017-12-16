@@ -92,13 +92,42 @@ def _load_and_save(dataset):
     x = np.concatenate((xTrain,xTest),axis=0)
     y = np.concatenate((yTrain,yTest),axis=0).reshape((-1,1))
     data = np.concatenate((x,y),axis=1)
-    _preprocess()
+    data_array = np.array(data)
+    features = data_array[:, :-1].astype(np.float)
+    labels = data_array[:, -1]
+    classes = list(set(labels))
+    if dataset != 'kin8nm':
+        for i in range(labels.shape[0]):
+            if labels[i] == classes[0]:
+                labels[i] = 1
+            else:
+                labels[i] = -1
+    labels = labels.astype(np.float)
+    features, labels = shuffle(features, labels)
+    frac = .5
+    frac = int( features.shape[0] * frac )
+    xTrain = features[:frac, :]
+    xTest = features[frac:, :]
+    yTrain = labels[:frac]
+    yTest = labels[frac:]
+    scaler = preprocessing.MinMaxScaler(feature_range=(0., 1.))
+    xTrain = scaler.fit_transform(xTrain)
+    xTest = scaler.transform(xTest)
+    mTrain = np.mean(xTrain,axis=0)
+    xTrain -= mTrain
+    xTest -= mTrain
+    _list = [xTrain, yTrain, xTest, yTest]
+    with open('data_python/' + dataset, 'wb') as _file:
+        pickle.dump(_list, _file)
 
 if __name__ == '__main__':
-    data_sets = ['kin8nm', 'ionosphere'] # 'sonar', 'ionosphere',
+    data_sets = ['kin8nm', 'ionosphere', 'sonar']
     for dataset in data_sets:
         _preprocess(dataset)
-    data_sets_chris = ['breast-cancer']#, 'diabetes', 'fourclass', 'german',
-        #'heart', 'kin8nm', 'madelon', 'supernova']
+    data_sets_chris = ['breast-cancer', 'diabetes', 'fourclass', 'german',
+        'heart', 'madelon']
     for dataset in data_sets_chris:
         preprocessor_libsvm_data(dataset)
+    data_sets_load = ['supernova']
+    for dataset in data_sets_load:
+        _load_and_save(dataset)
