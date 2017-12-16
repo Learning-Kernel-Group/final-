@@ -31,23 +31,17 @@ def find_kernel(x, y, degree=1, lam=10., eta=0.2, L=1., mu0=None, mu_init=None, 
     al = np.zeros(m)
     it = 0
     it_max = 100
-    while np.linalg.norm(al - al_prime) / np.linalg.norm(al_prime) > eps and it < it_max:
+    while np.linalg.norm(al - al_prime) > eps and it < it_max:
         al = al_prime
         mu = beta * derivatives(degree, base_kernels, mu, al)
-        try:
-            gram = sum_weight_kernels(base_kernels, mu) ** degree + lam * np.eye(m)
-        except RuntimeWarning:
-            return np.zeros(p), np.zeros(m,m)
+        gram = sum_weight_kernels(base_kernels, mu) ** degree + lam * np.eye(m)
         al_prime = eta * al + (1. - eta) * np.linalg.solve(gram,y)
         it += 1
-    print('L = ', L, 'lam = ', lam)
-    print('iter = ', it)
+    print 'L = ', L, 'lam = ', lam 
+    print 'iter = ', it
     base_kernels = get_base_kernels(x, subsampling=1)
-    try:
-        return mu, sum_weight_kernels(base_kernels, mu) ** degree
-    except RuntimeWarning:
-        return 0.* mu, 0. * sum_weight_kernels(base_kernels, mu)
-
+    return mu, sum_weight_kernels(base_kernels, mu) ** degree
+    
 def derivatives(degree, base_kernels, mu, al):
     d = []
     tmp = sum_weight_kernels(base_kernels, mu)

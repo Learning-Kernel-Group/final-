@@ -19,31 +19,32 @@ from kernel import make_base_kernels
 def get_base_kernels(features, subsampling=1):
     return make_base_kernels(features, subsampling=subsampling)
 
-def find_kernel(x, y, degree=1, lam=10., eta=0.2, L=1., mu0=None, mu_init=None, eps=1e-3, subsampling=1):
+def find_kernel(x, y, degree=1, lam=10., eta=1., L=1., mu0=None, mu_init=None, eps=1e-3, subsampling=1):
     (m, p) = x.shape
-    #m = m / subsampling + int(subsampling > 1)
+    m = m / subsampling + int(subsampling > 1)
     mu = np.zeros(p)
     mu_prime = mu_init
     base_kernels = get_base_kernels(x, subsampling=subsampling)
     gram = sum_weight_kernels(base_kernels, mu) ** degree + lam * np.eye(m) # gram = K_mu + lam * I
-    #y = y[::subsampling]
+    y = y[::subsampling]
     al = np.linalg.solve(gram, y)
     it = 0
-    it_max = 50
-    while np.linalg.norm(mu - mu_prime) > eps and it < it_max:
+    it_max = 100
+    dist = np.linalg.norm(mu - mu_prime)
+    while dist > eps and it < it_max:
         mu = mu_prime
         gram = sum_weight_kernels(base_kernels, mu) ** degree + lam * np.eye(m)
         al = np.linalg.solve(gram,y)
         mu_prime = mu + eta * derivatives(degree, base_kernels, mu, al)
-        mu_prime = mu0 + L * (mu_prime -mu0) / np.linalg.norm(mu_prime - mu0)
+        mu_prime = mu0 + L * (mu_prime - mu0) / np.linalg.norm(mu_prime - mu0)
         it += 1
-        if it > 25:
+        dist_old = dist
+        dist = np.linalg.norm(mu - mu_prime)
+        if dist > dist_old:
             eta *= 0.8
-            it_old = it
     mu = mu_prime
-    print('L = ', L, 'lam = ', lam )
-    print('iter = ', it)
-    base_kernels = get_base_kernels(x, subsampling=1)
+    print 'L = ', L, 'lam = ', lam
+    print 'iter = ', it
     return mu, sum_weight_kernels(base_kernels, mu) ** degree
 
 def derivatives(degree, base_kernels, mu, al):
